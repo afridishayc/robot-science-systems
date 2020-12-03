@@ -1,0 +1,53 @@
+% Input: robot -> A 2-DOF robot encapsulated in a MATLAB cell with fields:
+%                 robot.link1, robot.link2, robot.pivot1, robot.pivot2
+%                 See description in hw2_cspace and demo code in C1.
+%        obstacles -> 1xN vector of polyshape objects describing N 2-D
+%                     polygonal obstacles
+%        q_path -> Mx2 matrix containing a collision-free path from
+%                  q_start to q_goal. Each row in q_path is a robot
+%                  configuration. The first row should be q_start,
+%                  the final row should be q_goal.
+% Output: num_collisions -> Number of swept-volume collisions encountered
+%                           between consecutive configurations in q_path
+
+function num_collisions = C6(robot, obstacles, q_path)
+    num_collisions = 0;
+    prev_config = [];
+    prev_polys = [];
+    prev_pivots = p
+    for current_config = q_path'
+        if isempty(prev_config)
+            prev_config = current_config;
+            [prev_poly1, prev_poly2, prev_pivot1, prev_pivot2] = q2poly(robot, prev_config);
+            prev_polys = [prev_poly1 prev_poly2];
+        end
+        [current_poly1, current_poly2, current_pivot1, current_pivot2] = q2poly(robot, current_config);
+        x1 = prev_polys(1).Vertices(:, 1)';
+        y1 = prev_polys(1).Vertices(:, 2)';
+        
+        x2 = prev_polys(2).Vertices(:, 1)';
+        y2 = prev_polys(2).Vertices(:, 2)';
+        
+        x3 = current_poly1.Vertices(:, 1)';
+        y3 = current_poly1.Vertices(:, 2)';
+        
+        x4 = current_poly2.Vertices(:, 1)';
+        y4 = current_poly2.Vertices(:, 2)';
+        polyin1 = polyshape({x1,x3},{y1,y3});
+        polyin2 = polyshape({x2,x4},{y2,y4});
+        polyout1 = convhull(polyin1);
+        polyout2 = convhull(polyin2);
+        for obstacle = obstacles
+            intersection_areas_1 = intersect(polyout1, obstacle).NumRegions;
+            intersection_areas_2 = intersect(polyout2, obstacle).NumRegions;
+            if intersection_areas_1 > 0 | intersection_areas_2 > 0
+                num_collisions = num_collisions + 1;
+                plot(current_poly1, 'FaceColor', 'r');
+                plot(current_poly2, 'FaceColor', 'b');
+                plot(prev_polys(1), 'FaceColor', 'r');
+                plot(prev_polys(2), 'FaceColor', 'b');
+            end
+        end
+        prev_polys = [current_poly1, current_poly2];
+    end
+end
